@@ -6,7 +6,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import streamlit as st
-
+import json
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -23,16 +23,28 @@ st.set_page_config(
     page_icon="🔹"
 )
 
-load_dotenv("secrets.env")
+#load_dotenv("secrets.env")
 
 
     
+# Access Gmail token and credentials
+token_json = st.secrets["gmail"]["token_json"]
+credentials_json = st.secrets["gmail"]["credentials_json"]
 
+# Access OpenAI API key
+openai_key = st.secrets["openai"]["api_key"]
+
+# Access Hugging Face token
+hf_token = st.secrets["huggingface"]["token"]
+
+# Access default email
+default_email = st.secrets["default"]["email"]
 
 # If modifying these SCOPES, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
-def authenticate_gmail():
+
+def authenticate_gmail_old():
     """Authenticate and create the Gmail API service."""
     creds = None
     if os.path.exists('token.json'):
@@ -45,6 +57,28 @@ def authenticate_gmail():
             creds = flow.run_local_server(port=0)
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
+    return build('gmail', 'v1', credentials=creds)
+
+def authenticate_gmail():
+    """Authenticate and create the Gmail API service using Streamlit secrets."""
+    creds = None
+
+    # Load JSONs from Streamlit secrets
+    token_json = json.loads(st.secrets["gmail"]["token_json"])
+    credentials_json = json.loads(st.secrets["gmail"]["credentials_json"])
+
+    # Create credentials from the token JSON
+    creds = Credentials.from_authorized_user_info(token_json, SCOPES)
+
+    # Refresh or create new credentials if necessary
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            # Use client configuration for creating new credentials
+            flow = InstalledAppFlow.from_client_config(credentials_json["installed"], SCOPES)
+            creds = flow.run_local_server(port=0)
+
     return build('gmail', 'v1', credentials=creds)
 
 def get_emails(service, user_id='me'):

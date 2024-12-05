@@ -5,3 +5,4 @@ token.json
 mistral_model/consolidated.safetensors
 mistral_model/OllamaSetup.exe
 OllamaSetup.exe
+secrets.toml
